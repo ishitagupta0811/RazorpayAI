@@ -11,31 +11,49 @@ The **Razorpay AI Revenue Growth Agent** is an autonomous, context-aware co-pilo
 
 ### Non-Negotiable Operating Principles
 - **Dynamic AI Reasoning (No Hardcoded Flows)**: The AI dynamically interprets user choices, style preferences, categories, budgets, and occasions. Recommendations are generated contextually based on whatever clothing or items the user selects—not constrained by hardcoded scripts or fixed occasion templates.
-- **Visual Richness & Image First**: Every product recommendation, search result, cart item, and recommendation card visually renders product images to maximize conversion and customer trust.
+- **Visual Richness & External Image URL Pipeline**: Product images are supplied directly by merchants via catalog CSV inputs and served via standard HTTP/HTTPS image URLs. Product images are NOT stored locally inside `frontend/public/images/`.
 - **Explainability**: Every recommendation includes a clear, customer-centric rationale ("Why this?").
 - **Financial & Budget Guardrails**: Hard ceilings on customer budget; no automated billing—every financial action requires explicit customer approval before Razorpay checkout initiation.
 - **Respectful Proactivity ("The Power of Doing Nothing")**: The agent evaluates relevance score and confidence threshold; if no high-value recommendation exists, it remains completely silent to prevent customer fatigue.
 
 ---
 
-## 2. High-Level System Architecture
+## 2. High-Level System Architecture & Product Image Flow
 
-The solution is decomposed into three isolated yet closely coordinated modules: **Frontend Storefront**, **Backend Orchestrator**, and **AI Engine**, cleanly organized in dedicated workspace directories (`frontend/`, `backend/`, `ai/`).
+### 2.1 Product Image Architecture Flow
+
+Product images follow a strict, decoupled single-source-of-truth pipeline:
+
+```
+CSV (Merchant Input) ──► Database (Canonical Storage) ──► JSON API (API Communication) ──► Frontend / AI
+```
+
+- **CSV = Merchant Input**: The merchant catalog is supplied as a CSV file containing an `image_url` field (and optional additional image URLs).
+- **Database = Canonical Storage**: The backend ingestion service imports the merchant CSV and stores `image_url` alongside product metadata in the relational database.
+- **JSON = API Communication**: The backend REST/GraphQL API returns `image_url` in all JSON payload responses.
+- **Frontend & AI Consumption**: Storefront product cards, AI recommendation drawer cards, wishlist items, slide-over cart, and checkout modals consume this exact `image_url` string. Product images are NEVER stored in `frontend/public/images/`.
+
+### 2.2 System Component Diagram
 
 ```mermaid
 flowchart TB
+    subgraph Merchant ["Merchant Catalog Input"]
+        CSV_File["Merchant Catalog CSV (contains image_url)"]
+    end
+
     subgraph Frontend ["frontend/ (Storefront Web App)"]
-        UI_Store["Product Discovery Grid (Visual Image Cards)"]
-        UI_Chat["AI Sales Co-Pilot & Chat Panel"]
+        UI_Store["Product Discovery Grid (Renders image_url)"]
+        UI_Chat["AI Sales Co-Pilot & Chat Panel (Renders Rec Cards)"]
         UI_OneTap["One-Tap Quick Actions & View Product Triggers"]
         UI_Cart["Cart & Outfit Builder (Image Thumbnails)"]
-        UI_Wishlist["Wishlist Drawer (Visual Items)"]
+        UI_Wishlist["Wishlist Drawer (Renders image_url)"]
         UI_Razorpay["Razorpay Test Checkout Modal"]
     end
 
     subgraph Backend ["backend/ (FastAPI / Node API Orchestrator)"]
+        CSV_Ingest["CSV Ingestion & Importer"]
         API_Gateway["API Gateway & Session Manager"]
-        Catalog_Service["Catalog, Image Asset & Inventory Service"]
+        Catalog_Service["Catalog & Inventory Service"]
         Cart_Service["Cart & Wishlist State Service"]
         Event_Bus["Shopping Event Pipeline (Add to Bag, View, Query)"]
         Razorpay_Service["Razorpay Payment & Order Service"]
@@ -58,6 +76,10 @@ flowchart TB
         RP_Orders["Orders API"]
         RP_Payments["Payment Verification & Webhooks"]
     end
+
+    %% CSV Ingestion
+    CSV_File -->|Upload / Seed| CSV_Ingest
+    CSV_Ingest -->|Persist image_url & metadata| DB
 
     %% User interactions
     UI_Store -->|Browse / Search| API_Gateway
@@ -87,21 +109,21 @@ flowchart TB
     Upsell_Module & CrossSell_Module & Wishlist_Module --> Silence_Guard
     Silence_Guard -->|If Score >= Threshold| Explanation_Gen
     Silence_Guard -->|If Score < Threshold| Proactive_Engine
-    Explanation_Gen -->|Structured Recommendation Card + Image URL| API_Gateway
+    Explanation_Gen -->|Structured Recommendation Card + image_url| API_Gateway
 ```
 
 ---
 
 ## 3. Directory Structure & Separation of Concerns
 
-The workspace is organized into four core directories with a strict separation of concerns:
+The workspace is organized into core directories with strict separation of concerns. Notice that product images are **not** stored inside `frontend/public/images/`.
 
 ```
 RazorpayAI/
 ├── .gitignore                    # Master ignore rules for Python, Node, env, build artifacts
 ├── docs/                         # Architecture, problem statement, API schemas
 │   ├── problemStatement.md       # Original contest problem statement
-│   └── phase_wise_architecture.md# Dynamic architectural specification with image handling
+│   └── phase_wise_architecture.md# Dynamic architectural specification
 │
 ├── backend/                      # Backend Orchestrator & Business Logic
 │   ├── README.md
@@ -114,21 +136,23 @@ RazorpayAI/
 │   │   ├── core/                 # App configuration, security, database sessions
 │   │   ├── models/               # Database ORM models (Product with image_url, Cart, Order)
 │   │   ├── schemas/              # Pydantic / DTO validation schemas
+│   │   ├── db/
+│   │   │   ├── csv_importer.py   # Ingests merchant CSV catalog with image_url column
+│   │   │   └── seed_data.csv     # Merchant catalog CSV dataset
 │   │   └── services/             # Razorpay client, Cart logic, Event dispatcher
 │   ├── tests/                    # Backend unit and integration tests
 │   └── requirements.txt / package.json
 │
 ├── frontend/                     # Interactive Merchant Storefront & AI Drawer
 │   ├── README.md
-│   ├── public/                   # Static assets, product sample images
-│   │   └── images/               # Product image catalog assets
+│   ├── public/                   # Static favicon and index html assets (No static product images)
 │   ├── src/
 │   │   ├── assets/               # CSS styles, design system tokens
 │   │   ├── components/
-│   │   │   ├── catalog/          # Product card with image rendering, discovery grid, filters
-│   │   │   ├── chat/             # AI co-pilot panel, message bubbles with product images
-│   │   │   ├── recommendations/  # Upsell cards, Cross-sell bundles, Wishlist prompts with image & View Product
-│   │   │   ├── cart/             # Slide-over cart with product image thumbnails
+│   │   │   ├── catalog/          # Product card rendering image_url from API, grid, filters
+│   │   │   ├── chat/             # AI co-pilot panel, message bubbles rendering image_url
+│   │   │   ├── recommendations/  # Upsell cards, Cross-sell bundles with image_url & View Product
+│   │   │   ├── cart/             # Slide-over cart rendering image_url thumbnails
 │   │   │   └── checkout/         # Razorpay checkout trigger & order confirmation
 │   │   ├── context/              # CartContext, WishlistContext, AgentContext
 │   │   ├── hooks/                # useAgent, useCart, useRazorpay
@@ -139,7 +163,7 @@ RazorpayAI/
     ├── README.md
     ├── catalog_indexer/          # Catalog enrichment, auto-tagging, vector/graph generation
     ├── agents/
-    │   ├── reactive_agent.py     # Conversational search returning product images & details
+    │   ├── reactive_agent.py     # Conversational search returning image_url & details
     │   ├── proactive_agent.py    # Add-to-bag trigger evaluator & rule orchestration
     │   └── decision_engine.py    # Upsell vs Cross-sell vs Wishlist prioritization
     ├── prompts/                  # System prompts, few-shot templates, explainability guardrails
@@ -152,7 +176,7 @@ RazorpayAI/
 
 ## 4. Detailed Data Models & Schema Design
 
-### 4.1 Product & Relationship Graph Model (with Product Image Support)
+### 4.1 Product & Relationship Graph Model
 ```json
 {
   "product_id": "prod_101",
@@ -162,10 +186,10 @@ RazorpayAI/
   "subcategory": "Shirts",
   "price": 399,
   "currency": "INR",
-  "image_url": "/images/products/classic_oxford_shirt.png",
+  "image_url": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop&q=80",
   "image_urls": [
-    "/images/products/classic_oxford_shirt_front.png",
-    "/images/products/classic_oxford_shirt_detail.png"
+    "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80"
   ],
   "attributes": {
     "color": "White",
@@ -199,7 +223,7 @@ RazorpayAI/
 }
 ```
 
-### 4.2 Shopping Context & Active Session (Retaining Images for Visual Confirmation)
+### 4.2 Shopping Context & Active Session
 ```json
 {
   "session_id": "sess_abc123",
@@ -215,7 +239,7 @@ RazorpayAI/
         "title": "Classic Oxford Shirt",
         "quantity": 1,
         "price": 399,
-        "image_url": "/images/products/classic_oxford_shirt.png"
+        "image_url": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop&q=80"
       }
     ],
     "subtotal": 399,
@@ -227,7 +251,7 @@ RazorpayAI/
       "product_id": "prod_201",
       "title": "Navy Tailored Trousers",
       "price": 899,
-      "image_url": "/images/products/navy_trousers.png",
+      "image_url": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&auto=format&fit=crop&q=80",
       "added_at": "2026-08-15T10:00:00Z"
     }
   ],
@@ -238,7 +262,7 @@ RazorpayAI/
 }
 ```
 
-### 4.3 Recommendation & Explanation Contract (Image & Visual Actions)
+### 4.3 Recommendation & Explanation Contract
 ```json
 {
   "recommendation_id": "rec_9921",
@@ -248,7 +272,7 @@ RazorpayAI/
     "product_id": "prod_102",
     "title": "Premium Wrinkle-Free Oxford Shirt",
     "price": 499,
-    "image_url": "/images/products/oxford_wrinkle_free.png",
+    "image_url": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80",
     "attributes": {
       "fabric": "Wrinkle-Resistant Cotton",
       "fit": "Structured Slim"
@@ -305,7 +329,7 @@ Customer Shopping Action (e.g. Add to Bag: prod_101)
                ▼
       [Step 1: Check Upsell]
    Is there a strictly better version of prod_101?
-   - Candidate: prod_102 (₹499, +₹100, image_url: /images/oxford_wrinkle_free.png)
+   - Candidate: prod_102 (₹499, +₹100, image_url: https://images.unsplash.com/...)
    - Within Budget: Yes (399 + 100 <= Budget)
    - Upsell already rejected this session? No
    - Candidate Confidence >= 0.80? YES
@@ -349,57 +373,57 @@ gantt
     dateFormat  X
     axisFormat Phase %d
     section Development
-    Phase 1 : Catalog & Vector Graph Ingestion (Image Metadata) : 0, 1
-    Phase 2 : Reactive AI & Semantic Discovery (Visual Cards)   : 1, 2
-    Phase 3 : Proactive Decision Engine (Visual Recommendation Cards): 2, 3
+    Phase 1 : CSV Ingestion & DB Catalog Storage (image_url)    : 0, 1
+    Phase 2 : Reactive AI & Semantic Discovery (JSON API image_url): 1, 2
+    Phase 3 : Proactive Sales Agent (Visual Recommendation Cards): 2, 3
     Phase 4 : Cart Builder & Razorpay Checkout (Image Basket)   : 3, 4
     section Polishing & Ops
     Phase 5 : Merchant Dashboard & AOV Attribution              : 4, 5
-    Phase 6 : Security, Guardrails & Evaluation Benchmarks         : 5, 6
+    Phase 6 : Security, Guardrails & Image Fallback Handling    : 5, 6
 ```
 
 ---
 
-### Phase 1: Foundation, Catalog Management & Vector/Graph Indexing
-**Primary Focus**: Structuring the merchant catalog with full product image support, establishing dynamic relationship graphs, and creating the vector search data foundation.
+### Phase 1: Foundation, Catalog Ingestion & Database Indexing
+**Primary Focus**: Merchant catalog CSV ingestion, database storage of `image_url`, establishing relationship graphs, and building the vector search index.
 
-- **Product Image Integration**:
-  - Extend the Product data model to include `image_url` and optional `image_urls`.
-  - Product images are provided by the merchant through the uploaded catalog/dataset or mapped from static image assets in `frontend/public/images/`.
-  - Store the image reference alongside product metadata so every product can be rendered visually throughout the application.
+- **CSV Catalog Ingestion Pipeline**:
+  - Merchant catalog is provided as a CSV file containing an `image_url` field per product (and optional `image_urls` for multi-image products).
+  - The backend CSV importer parses the CSV, validates column schema, and stores `image_url` directly in the database alongside title, price, category, and attributes.
+  - Product images are NOT saved in `frontend/public/images/`.
 - **`ai/catalog_indexer/`**:
-  - `enricher.py`: LLM-based catalog enricher that dynamically extracts product features (fabric, fit, aesthetic, style, occasions) and links product image metadata.
+  - `enricher.py`: LLM-based catalog enricher processing merchant CSV data, deriving quality tiers, style tags, and validating external image URLs.
   - `graph_builder.py`: Computes pairwise relationships dynamically:
     - *Upgrade links* (same category, superior attribute, price delta ratio).
     - *Complementary links* (e.g., Topwear &harr; Bottomwear &harr; Footwear &harr; Accessories).
   - `vector_indexer.py`: Generates vector embeddings for semantic, multi-attribute catalog retrieval.
 - **`backend/`**:
-  - Database schema definition using SQLite/PostgreSQL (Product with `image_url` column, Category, Attribute, ProductRelation).
-  - Seed catalog dataset containing multi-category clothing and accessories with mapped static product images.
-  - REST endpoints: `GET /api/catalog/products`, `GET /api/catalog/products/{id}`, `GET /api/catalog/categories`.
+  - `csv_importer.py`: Parses merchant CSV file and populates the database (`Product`, `Category`, `ProductRelation`).
+  - Database schema definition using SQLite/PostgreSQL (`Product` table with `image_url` text column).
+  - REST endpoints: `GET /api/catalog/products` (returns JSON DTO with `image_url`), `GET /api/catalog/products/{id}`, `GET /api/catalog/categories`.
 - **`frontend/`**:
   - Storefront layout with header, multi-filter navigation, category chips, and responsive product grid.
-  - Product Card component displaying high-resolution product image, price, title, and badges for fabric/style tags.
+  - Product Card component rendering external product images directly from `image_url` returned by the JSON API.
 
 ---
 
 ### Phase 2: Reactive AI Assistant & Semantic Product Discovery
 **Primary Focus**: Handling customer-initiated requests, custom style queries, budget constraints, multi-turn clarification, and dynamic grid updates with visual product cards.
 
-- **Product Image Handling in Search & Chat**:
+- **JSON API Image Response**:
   - When the reactive agent searches or recommends products, the backend API response returns `product_id`, `title`, `price`, `image_url`, and relevant attributes.
-  - The center discovery grid renders the actual product image for all returned items.
-  - AI recommendations displayed inside the chat drawer render visual product cards containing the product image.
+  - The center discovery grid renders the product image directly from `image_url`.
+  - AI recommendations displayed inside the chat drawer render visual product cards containing the product image loaded from `image_url`.
 - **`ai/agents/reactive_agent.py`**:
   - Intent parser extracting user-specified categories, styles, colors, occasions, and price limits dynamically from free-form user prompt.
-  - Dynamic outfit/look builder intent extractor (allocating budget across slots based on user selections).
-  - Conversational memory answering product comparison and advice questions based on user's selected clothes.
+  - Dynamic outfit/look builder intent extractor.
+  - Conversational memory answering product comparison questions based on user selections.
 - **`backend/`**:
   - `POST /api/agent/chat`: Ingests conversation history, invokes reactive agent, returns conversational reply and matched products with `image_url`.
   - Session state tracking for current user query parameters and active filters.
 - **`frontend/`**:
   - Collapsible/Floating AI Sales Agent Drawer.
-  - Interactive message bubbles with embedded visual mini product cards (showing image, title, price).
+  - Interactive message bubbles with embedded visual mini product cards (rendering image from `image_url`, title, price).
   - Seamless sync: AI recommendations in chat update or highlight items in the main product discovery grid.
 
 ---
@@ -410,10 +434,10 @@ gantt
 - **Visual Recommendation Contract**:
   - For every `UPSELL`, `CROSS_SELL`, or `WISHLIST_RECOVERY` recommendation, the recommendation contract returns the product `image_url`.
   - The AI chat recommendation card displays:
-    1. **Product image**
+    1. **Product image** (rendered from `image_url`)
     2. **Product name**
     3. **Price**
-    4. **Price difference (&Delta;Price)** for upsells, when applicable (e.g., `+₹100`)
+    4. **Price difference ($\Delta\text{Price}$)** for upsells, when applicable (e.g., `+₹100`)
     5. **Short explanation / reason** ("Why this recommendation?")
     6. **View Product** button/link
     7. **Relevant one-tap action** such as `Yes, upgrade`, `No, keep this`, or `Add to outfit`
@@ -421,17 +445,15 @@ gantt
   - When the customer clicks **View Product**, the frontend opens/highlights that exact product in the center discovery area while keeping the AI agent panel open.
 - **`ai/agents/proactive_agent.py` & `ai/agents/decision_engine.py`**:
   - Event listener evaluating `ShoppingContext` on `item_added_to_bag`.
-  - **Upsell Evaluator**: Finds upgrade candidates matching the selected item's style with superior attributes, price delta, and image URL.
+  - **Upsell Evaluator**: Finds upgrade candidates matching the selected item's style with superior attributes, price delta, and `image_url`.
   - **Cross-Sell Evaluator**: Identifies complementary pieces matching the customer's selected clothes to complete a look.
   - **Wishlist Recovery Evaluator**: Scans customer's saved wishlist for items matching current selections.
   - **Silence Gatekeeper**: If recommendation relevance &lt; 0.70 or delta price exceeds budget, returns `SILENT`.
 - **`backend/`**:
-  - `POST /api/events/shopping-event`: Ingests cart changes, triggers proactive agent pipeline returning complete recommendation payload with images.
-  - State tracking for rejected recommendations (avoids repeating rejected items).
+  - `POST /api/events/shopping-event`: Ingests cart changes, triggers proactive agent pipeline returning recommendation payload with `image_url`.
 - **`frontend/`**:
-  - Interactive recommendation card component with image preview, price tag, &Delta;price badge, explanation text, and one-tap action buttons.
+  - Recommendation card component rendering `image_url`, price tag, &Delta;price badge, explanation text, and one-tap action buttons.
   - Contextual banner in chat: *"💡 From your wishlist..."* and *"✨ Better version found..."*.
-  - View Product event listener syncing selection to center discovery grid without closing chat.
 
 ---
 
@@ -439,13 +461,13 @@ gantt
 **Primary Focus**: Frictionless basket composition with product image thumbnails, outfit completion tracker, and secure Razorpay Test-Mode payment flow.
 
 - **Visual Cart & Outfit Builder**:
-  - Cart and outfit-builder items retain their `image_url` thumbnail so the customer can visually confirm their final basket before proceeding to Razorpay checkout.
+  - Cart and outfit-builder items retain their `image_url` string so the customer visually confirms their final basket before proceeding to Razorpay checkout.
 - **`backend/services/razorpay_service.py`**:
   - Razorpay SDK integration running in **Test Mode**.
   - `POST /api/checkout/create-order`: Validates cart total in paise, creates Razorpay Order (`order_id`), returns key ID and order details.
   - `POST /api/checkout/verify-payment`: Verifies HMAC SHA256 signature (`razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`) to confirm payment authenticity.
 - **`frontend/`**:
-  - **Slide-over Cart & Look Completion Tracker**: Visual stepper showing product image thumbnails alongside look progression (e.g., [x] Topwear image, [x] Bottomwear image, [ ] Footwear).
+  - **Slide-over Cart & Look Completion Tracker**: Stepper showing product image thumbnails (loaded from `image_url`) alongside look progression.
   - **Razorpay Checkout Modal integration**: Loads `https://checkout.razorpay.com/v1/checkout.js` in test mode.
   - Order success screen with visual summary of purchased items, images, savings, and payment ID.
 
@@ -474,8 +496,9 @@ gantt
 
 - **AI Safety & Financial Boundary**:
   - AI can never invoke payment charges or alter prices arbitrarily.
-  - Image URL fallback mechanism (placeholders/default asset if image link is unreachable).
   - Strict PII redaction on customer chat logs.
+- **Image Fallback Handling**:
+  - If an external `image_url` is broken, unreachable, or returns a 404 error, the frontend gracefully falls back to rendering a default vector/SVG placeholder image so the UI remains pristine.
 - **Automated Test Scenarios**:
   - Budget overflow test: Customer budget ceiling &rarr; agent must NOT suggest upsells exceeding limit.
   - Silence test: Single unrelated item added &rarr; agent must remain silent if no credible link exists.
@@ -488,12 +511,12 @@ gantt
 
 | Phase | `backend/` Deliverables | `frontend/` Deliverables | `ai/` Deliverables |
 |---|---|---|---|
-| **Phase 1** | Catalog schema with `image_url`, DB migration, Seed data, Product APIs | Storefront shell, Product grid with image cards, Category navigation | Catalog enricher with image metadata, Graph builder, Embeddings |
-| **Phase 2** | Session manager, Chat API endpoint returning `image_url`, Filter resolver | AI Chat drawer with visual product cards, Message bubbles, Grid search sync | Reactive intent parser, Budget extractor, Visual outfit builder |
-| **Phase 3** | Shopping event bus, Rejection tracker, Context API with image contracts | Recommendation cards (Image, Price, &Delta;Price, Rationale, View Product trigger, One-tap buttons) | Proactive decision engine, Silence threshold, Explainability generator |
-| **Phase 4** | Razorpay order creation, Signature verification, Cart logic with images | Visual outfit completion tracker, Cart drawer with image thumbnails, Razorpay modal | Look-completion validator |
+| **Phase 1** | Merchant CSV importer, Catalog DB schema with `image_url`, Product APIs | Storefront shell, Product grid rendering API `image_url`, Category navigation | CSV enricher validating `image_url`, Graph builder, Embeddings |
+| **Phase 2** | Session manager, Chat API endpoint returning `image_url`, Filter resolver | AI Chat drawer with visual product cards (rendering `image_url`), Grid search sync | Reactive intent parser, Budget extractor, Visual outfit builder |
+| **Phase 3** | Shopping event bus, Rejection tracker, Context API with `image_url` contracts | Recommendation cards (Image from `image_url`, Price, &Delta;Price, Rationale, View Product trigger, One-tap buttons) | Proactive decision engine, Silence threshold, Explainability generator |
+| **Phase 4** | Razorpay order creation, Signature verification, Cart logic with `image_url` | Visual outfit completion tracker, Cart drawer with `image_url` thumbnails, Razorpay modal | Look-completion validator |
 | **Phase 5** | Analytics schema, AOV metric aggregation API | Merchant analytics dashboard & attribution charts | Conversion logger & interaction audit |
-| **Phase 6** | Rate limiting, Auth middleware, Integration test suite, Image fallbacks | Error boundaries, Toast notifications, Polished dark/light UI | Prompt injection defense, Budget safety assertions |
+| **Phase 6** | Rate limiting, Auth middleware, Integration test suite | Image error fallback handler (SVG placeholder), Error boundaries, Toast notifications | Prompt injection defense, Budget safety assertions |
 
 ---
 
@@ -505,7 +528,7 @@ gantt
 2. **Security**:
    - Razorpay key secrets strictly loaded via `.env` and kept server-side in `backend/`.
    - Client only receives the public `key_id`.
-3. **Reliability & Fallbacks**:
-   - Fallback image placeholder rendered gracefully if product image fails to load.
+3. **Reliability & Image Fallbacks**:
+   - Fallback SVG/placeholder image rendered gracefully by frontend `<img onerror="...">` if external `image_url` fails to load.
    - Fallback to rule-based recommendations if LLM API encounters timeout or rate limits.
    - Merchant storefront remains 100% functional even if AI service is temporarily offline.
