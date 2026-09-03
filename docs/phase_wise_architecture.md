@@ -41,7 +41,7 @@ flowchart TB
         CSV_File["Merchant Catalog CSV (contains image_url)"]
     end
 
-    subgraph Frontend ["frontend/ (Storefront Web App)"]
+    subgraph Frontend ["frontend/ (React SPA - Vite)"]
         UI_Store["Product Discovery Grid (Renders image_url)"]
         UI_Chat["AI Sales Co-Pilot & Chat Panel (Renders Rec Cards)"]
         UI_OneTap["One-Tap Quick Actions & View Product Triggers"]
@@ -143,21 +143,23 @@ RazorpayAI/
 │   ├── tests/                    # Backend unit and integration tests
 │   └── requirements.txt / package.json
 │
-├── frontend/                     # Interactive Merchant Storefront & AI Drawer
-│   ├── README.md
-│   ├── public/                   # Static favicon and index html assets (No static product images)
-│   ├── src/
-│   │   ├── assets/               # CSS styles, design system tokens
-│   │   ├── components/
-│   │   │   ├── catalog/          # Product card rendering image_url from API, grid, filters
-│   │   │   ├── chat/             # AI co-pilot panel, message bubbles rendering image_url
-│   │   │   ├── recommendations/  # Upsell cards, Cross-sell bundles with image_url & View Product
-│   │   │   ├── cart/             # Slide-over cart rendering image_url thumbnails
-│   │   │   └── checkout/         # Razorpay checkout trigger & order confirmation
-│   │   ├── context/              # CartContext, WishlistContext, AgentContext
-│   │   ├── hooks/                # useAgent, useCart, useRazorpay
-│   │   └── services/             # API client methods
-│   └── package.json
+├── frontend/                     # React Storefront SPA (Vite)
+│   ├── index.html                # Single Page Application entrypoint
+│   ├── vite.config.js            # Vite build & dev server configuration
+│   ├── package.json              # React 19, Axios, Vite dependencies
+│   ├── public/                   # Static public assets (No static product images)
+│   └── src/                      # React Application source
+│       ├── main.jsx              # React DOM mounting entrypoint
+│       ├── App.jsx               # Root application layout & state orchestration
+│       ├── index.css             # Global dark theme tokens & component styling
+│       ├── components/
+│       │   ├── layout/           # Header navbar & Hero banner components
+│       │   ├── catalog/          # ProductCard, ProductGrid, Filters components
+│       │   ├── chat/             # ChatDrawer AI Sales Co-Pilot component
+│       │   ├── recommendations/  # Upsell & Cross-sell look builder cards
+│       │   └── checkout/         # Razorpay payment checkout components
+│       └── services/
+│           └── api.js            # Shared Axios API instance & endpoint methods
 │
 └── ai/                           # AI Models, Embeddings, Prompts & Decision Logic
     ├── README.md
