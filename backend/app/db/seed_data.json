@@ -1,0 +1,220 @@
+{
+  "categories": [
+    { "id": "cat_apparel", "name": "Apparel", "slug": "apparel", "description": "Men's and Women's Clothing" },
+    { "id": "cat_footwear", "name": "Footwear", "slug": "footwear", "description": "Formal, Casual and Athletic Shoes" },
+    { "id": "cat_accessories", "name": "Accessories", "slug": "accessories", "description": "Belts, Watches and Bags" }
+  ],
+  "products": [
+    {
+      "id": "prod_101",
+      "title": "Classic Cotton Oxford Shirt",
+      "description": "100% breathable cotton, slim fit, versatile for daily workwear and smart casual occasions.",
+      "category": "cat_apparel",
+      "subcategory": "Shirts",
+      "price": 399,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "White",
+        "fabric": "100% Cotton",
+        "fit": "Slim Fit",
+        "style": "Smart Casual",
+        "occasions": ["Work", "Casual", "Events"]
+      },
+      "in_stock": 45
+    },
+    {
+      "id": "prod_102",
+      "title": "Premium Wrinkle-Free Oxford Shirt",
+      "description": "Wrinkle-resistant luxury Egyptian cotton weave with reinforced collar and tailored silhouette.",
+      "category": "cat_apparel",
+      "subcategory": "Shirts",
+      "price": 499,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Crisp White",
+        "fabric": "Egyptian Wrinkle-Free Cotton",
+        "fit": "Structured Slim",
+        "style": "Formal",
+        "occasions": ["Work", "Formal", "Events"]
+      },
+      "in_stock": 30
+    },
+    {
+      "id": "prod_103",
+      "title": "Sky Blue Linen Casual Shirt",
+      "description": "Lightweight pure linen shirt, garment washed for ultra-soft comfort in warm weather.",
+      "category": "cat_apparel",
+      "subcategory": "Shirts",
+      "price": 549,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Sky Blue",
+        "fabric": "100% French Linen",
+        "fit": "Relaxed Fit",
+        "style": "Casual",
+        "occasions": ["Weekend", "Vacation", "Summer"]
+      },
+      "in_stock": 25
+    },
+    {
+      "id": "prod_201",
+      "title": "Navy Tailored Stretch Trousers",
+      "description": "Flex-stretch cotton blend chinos engineered for dynamic motion and clean creased drape.",
+      "category": "cat_apparel",
+      "subcategory": "Trousers",
+      "price": 899,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Navy Blue",
+        "fabric": "Cotton Stretch Blend",
+        "fit": "Tailored Fit",
+        "style": "Smart Casual",
+        "occasions": ["Work", "Casual", "Events"]
+      },
+      "in_stock": 60
+    },
+    {
+      "id": "prod_202",
+      "title": "Charcoal Grey Italian Wool Trousers",
+      "description": "Premium 100% Italian Super 110s wool formal trousers with side adjusters.",
+      "category": "cat_apparel",
+      "subcategory": "Trousers",
+      "price": 1299,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Charcoal Grey",
+        "fabric": "Italian Wool",
+        "fit": "Classic Formal Fit",
+        "style": "Formal",
+        "occasions": ["Formal", "Work", "Gala"]
+      },
+      "in_stock": 20
+    },
+    {
+      "id": "prod_301",
+      "title": "Handcrafted Leather Derby Shoes",
+      "description": "Full-grain leather formal dress shoes with hand-burnished finish and cushioned memory foam insole.",
+      "category": "cat_footwear",
+      "subcategory": "Formal Shoes",
+      "price": 1499,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Dark Brown",
+        "fabric": "Full Grain Leather",
+        "fit": "Standard Width",
+        "style": "Formal",
+        "occasions": ["Work", "Events", "Formal"]
+      },
+      "in_stock": 15
+    },
+    {
+      "id": "prod_302",
+      "title": "Minimalist White Leather Sneakers",
+      "description": "Clean white Nappa leather low-top sneakers with rubber cupsole.",
+      "category": "cat_footwear",
+      "subcategory": "Casual Shoes",
+      "price": 1199,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Optic White",
+        "fabric": "Nappa Leather",
+        "fit": "Ergonomic Fit",
+        "style": "Casual",
+        "occasions": ["Casual", "Weekend", "Travel"]
+      },
+      "in_stock": 35
+    },
+    {
+      "id": "prod_401",
+      "title": "Reversible Italian Leather Belt",
+      "description": "Dual-sided black and tan full-grain leather belt with brushed nickel swivel buckle.",
+      "category": "cat_accessories",
+      "subcategory": "Belts",
+      "price": 349,
+      "currency": "INR",
+      "image_url": "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=600&auto=format&fit=crop&q=80",
+      "image_urls": [
+        "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=600&auto=format&fit=crop&q=80"
+      ],
+      "attributes": {
+        "color": "Black / Tan",
+        "fabric": "Italian Leather",
+        "fit": "Adjustable",
+        "style": "Versatile",
+        "occasions": ["Work", "Casual", "Formal"]
+      },
+      "in_stock": 50
+    }
+  ],
+  "relations": [
+    {
+      "source_id": "prod_101",
+      "target_id": "prod_102",
+      "relation_type": "UPGRADE",
+      "delta_price": 100,
+      "slot": "Shirts",
+      "pitch": "For ₹100 more, upgrade to Egyptian wrinkle-free fabric with structured collar retention."
+    },
+    {
+      "source_id": "prod_101",
+      "target_id": "prod_201",
+      "relation_type": "COMPLEMENT",
+      "delta_price": 899,
+      "slot": "Bottomwear",
+      "pitch": "Navy stretch chinos pair seamlessly with your white shirt for a complete smart casual look."
+    },
+    {
+      "source_id": "prod_101",
+      "target_id": "prod_301",
+      "relation_type": "COMPLEMENT",
+      "delta_price": 1499,
+      "slot": "Footwear",
+      "pitch": "Handcrafted brown leather Derby shoes elevate your shirt and trouser look into a sharp outfit."
+    },
+    {
+      "source_id": "prod_201",
+      "target_id": "prod_202",
+      "relation_type": "UPGRADE",
+      "delta_price": 400,
+      "slot": "Trousers",
+      "pitch": "Upgrade to 100% Super 110s Italian Wool for unmatched drape and luxurious feel."
+    },
+    {
+      "source_id": "prod_302",
+      "target_id": "prod_103",
+      "relation_type": "COMPLEMENT",
+      "delta_price": 549,
+      "slot": "Topwear",
+      "pitch": "Pair your minimalist white sneakers with this light sky blue linen shirt for relaxed weekend vibes."
+    }
+  ]
+}
