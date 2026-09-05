@@ -47,10 +47,18 @@ class ProactiveAgent:
             return self._silent_response()
 
         prod_id = target_product.get("id") or target_product_id
+
+        # When user actively clicks Add to Bag or Add to Wishlist, turn ON proactive agent for target_product!
+        if event_type in ["add_to_bag", "wishlist_add"]:
+            self.funnel_history[prod_id] = "INIT"
+            if self.session_cross_sell_count >= self.max_cross_sells:
+                self.session_cross_sell_count = 0  # Re-enable proactive agent on explicit user action
+
         current_state = self.funnel_history.get(prod_id, "INIT")
 
         # Explicit user response handlers to transition state
-        if event_type in ["upsell_rejected", "upgrade_accepted"]:
+        if event_type in ["upsell_rejected"]:
+            # User rejected upsell ("No, keep this") -> Move immediately to Cross-Selling / Complete the Look!
             self.funnel_history[prod_id] = "UPSELL_DONE"
             current_state = "UPSELL_DONE"
         elif event_type in ["cross_sell_rejected", "cross_sell_accepted", "add_to_outfit", "reject_cross_sell", "stop_proactive"]:
@@ -75,17 +83,12 @@ class ProactiveAgent:
                     session_context={"cart": cart_items, "wishlist": wishlist_items}
                 )
             else:
-                # If no higher tier product exists, advance to UPSELL_DONE and proceed to Cross-Sell
+                # If no higher tier product exists, advance to UPSELL_DONE and proceed immediately to Cross-Sell
                 current_state = "UPSELL_DONE"
                 self.funnel_history[prod_id] = "UPSELL_DONE"
 
-        # STAGE 2: CROSS-SELL SECOND (Once UPSELL has been done)
+        # STAGE 2: CROSS-SELL SECOND (Once UPSELL has been done or if no upsell item exists)
         if current_state == "UPSELL_DONE":
-            # Cap cross-sells at max 2 per session! Stop after 2 cross-sells.
-            if self.session_cross_sell_count >= self.max_cross_sells:
-                self.funnel_history[prod_id] = "STOPPED"
-                return self._silent_response()
-
             cross_sell_cand = self._evaluate_cross_sell(target_product, cart_items, catalog_products)
             if cross_sell_cand:
                 self.session_cross_sell_count += 1
