@@ -1,16 +1,30 @@
 import React from 'react';
+import { useCart } from '../../context/CartContext';
 
-export default function ProductCard({ product, onAddToCart }) {
+export default function ProductCard({ product, onAddToCart, onAddToWishlist, isWishlisted = false, onSelectProduct }) {
+  const { addToCart } = useCart();
   const attrs = product.attributes || {};
-  const styleBadge = attrs.style || product.subcategory || 'Fashion';
   const fabricTag = attrs.fabric || attrs.material_fabric || 'Quality Fabric';
   const fitTag = attrs.fit || attrs.fit_or_build || 'Tailored Fit';
   const defaultFallbackImage = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80";
 
+  const handleCardClick = () => {
+    if (onSelectProduct) {
+      onSelectProduct(product.id || product.product_id);
+    }
+  };
+
+  const handleHeartClick = (e) => {
+    e.stopPropagation();
+    if (onAddToWishlist) {
+      onAddToWishlist(product);
+    }
+  };
+
   return (
     <div className="product-card">
       {/* Product Image Container with 4:5 aspect ratio */}
-      <div className="card-image-container">
+      <div className="card-image-container" onClick={handleCardClick} style={{ cursor: 'pointer', position: 'relative' }}>
         <img
           src={product.image_url || defaultFallbackImage}
           alt={product.title}
@@ -21,30 +35,42 @@ export default function ProductCard({ product, onAddToCart }) {
             e.target.src = defaultFallbackImage;
           }}
         />
-        <span className="card-style-badge">{styleBadge}</span>
+
+        {/* Top-Right Clickable Wishlist Heart Button */}
+        <button
+          className={`wishlist-heart-btn ${isWishlisted ? 'active' : ''}`}
+          onClick={handleHeartClick}
+          title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          {isWishlisted ? '❤️' : '🤍'}
+        </button>
       </div>
 
       {/* Card Content & Details */}
       <div className="card-body">
-        <h3 className="card-title">{product.title}</h3>
-        <p className="card-description">
+        <h3 className="card-title" onClick={handleCardClick} style={{ cursor: 'pointer' }}>{product.title}</h3>
+        <p className="card-description" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
           {product.description ? (product.description.length > 80 ? `${product.description.substring(0, 80)}...` : product.description) : ''}
         </p>
 
         {/* Tag Pills */}
         <div className="card-tags">
-          <span className="tag-pill">🧵 {fabricTag}</span>
-          <span className="tag-pill">✨ {fitTag}</span>
+          <span className="tag-pill">{fabricTag}</span>
+          <span className="tag-pill">{fitTag}</span>
         </div>
 
-        {/* Footer with Price & Add to Cart button */}
+        {/* Footer with Price & Add to Bag button */}
         <div className="card-footer">
           <span className="card-price">₹{typeof product.price === 'number' ? product.price.toLocaleString('en-IN') : product.price}</span>
           <button
             className="add-to-cart-btn"
-            onClick={() => onAddToCart ? onAddToCart(product) : alert(`Added ${product.title} to cart!`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              addToCart(product);
+              if (onAddToCart) onAddToCart(product);
+            }}
           >
-            Add to Cart
+            Add to Bag
           </button>
         </div>
       </div>

@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import { getProducts } from '../../services/api';
 
-export default function ProductGrid({ products: propsProducts, loading: propsLoading, title = "Product Catalog" }) {
+export default function ProductGrid({
+  products: propsProducts,
+  loading: propsLoading,
+  title = "Product Catalog",
+  wishlistItems = [],
+  onAddToCart,
+  onAddToWishlist,
+  onSelectProduct
+}) {
   const [internalProducts, setInternalProducts] = useState([]);
   const [internalLoading, setInternalLoading] = useState(true);
 
@@ -55,12 +63,23 @@ export default function ProductGrid({ products: propsProducts, loading: propsLoa
         </div>
       ) : (
         <div className="product-grid-3col">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id || product.product_id}
-              product={product}
-            />
-          ))}
+          {products.map((product) => {
+            const prodId = product.id || product.product_id;
+            const isWishlisted = wishlistItems.some(
+              item => (item.id || item.product_id) === prodId
+            );
+
+            return (
+              <ProductCard
+                key={prodId}
+                product={product}
+                onAddToCart={onAddToCart}
+                onAddToWishlist={onAddToWishlist}
+                isWishlisted={isWishlisted}
+                onSelectProduct={onSelectProduct}
+              />
+            );
+          })}
         </div>
       )}
     </section>
