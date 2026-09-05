@@ -8,7 +8,13 @@ from typing import Dict, Any, Optional, List
 
 class IntentParser:
     def __init__(self):
-        self.category_keywords = {
+        self.main_category_keywords = {
+            "Footwear": ["footwear", "foot wear", "foot-wear", "shoes", "shoe", "heels", "flats", "sneakers", "sandals", "boots", "loafers", "oxfords", "stilettos", "ballerina"],
+            "Apparel": ["apparel", "clothing", "clothes", "outfit", "attire", "wear", "shirt", "shirts", "top", "tops", "tee", "t-shirt", "tshirt", "trouser", "trousers", "pants", "jeans", "denim", "blouse", "palazzo", "culotte"],
+            "Accessories": ["accessories", "accessory", "jewellery", "jewelry", "necklace", "necklaces", "perfume", "perfumes", "fragrance", "watch", "watches", "chain", "pendant"]
+        }
+
+        self.subcategory_keywords = {
             "Shirts": ["shirt", "button-down", "blouse"],
             "Tops": ["top", "tank", "halter", "wrap top", "sequin top"],
             "T-Shirts": ["tee", "t-shirt", "tshirt", "round neck"],
@@ -23,6 +29,21 @@ class IntentParser:
             "Watches": ["watch", "timepiece"]
         }
 
+        self.subcat_to_main_category = {
+            "Shirts": "Apparel",
+            "Tops": "Apparel",
+            "T-Shirts": "Apparel",
+            "Trousers": "Apparel",
+            "Jeans": "Apparel",
+            "Heels": "Footwear",
+            "Flats": "Footwear",
+            "Sneakers": "Footwear",
+            "Sandals": "Footwear",
+            "Necklaces": "Accessories",
+            "Perfumes": "Accessories",
+            "Watches": "Accessories"
+        }
+
         self.style_keywords = {
             "Formal": ["formal", "office", "business", "executive", "tailored"],
             "Smart Casual": ["smart casual", "semi formal", "work casual"],
@@ -31,7 +52,7 @@ class IntentParser:
         }
 
         self.occasion_keywords = {
-            "Interviews": ["interview", "job interview"],
+            "Interviews": ["interview", "job interview", "interviews"],
             "Office": ["office", "work", "desk", "business"],
             "Formal Events": ["formal event", "gala", "ceremony"],
             "Evening Events": ["evening", "dinner", "cocktail", "night out"],
@@ -62,12 +83,23 @@ class IntentParser:
                 except ValueError:
                     pass
 
-        # 2. Subcategory / Category extraction
+        # 2. Main Category & Subcategory extraction
+        matched_category = None
         matched_subcategory = None
-        for subcat, keywords in self.category_keywords.items():
+
+        # Check subcategory first
+        for subcat, keywords in self.subcategory_keywords.items():
             if any(kw in text for kw in keywords):
                 matched_subcategory = subcat
+                matched_category = self.subcat_to_main_category.get(subcat)
                 break
+
+        # If no specific subcategory matched, check main category keywords (e.g. "footwear", "shoes")
+        if not matched_category:
+            for main_cat, keywords in self.main_category_keywords.items():
+                if any(kw in text for kw in keywords):
+                    matched_category = main_cat
+                    break
 
         # 3. Style extraction
         matched_style = None
@@ -89,6 +121,7 @@ class IntentParser:
 
         return {
             "query": query,
+            "category": matched_category,
             "subcategory": matched_subcategory,
             "max_price": max_price,
             "style": matched_style,
