@@ -43,7 +43,7 @@ flowchart TB
 
     subgraph Frontend ["frontend/ (React SPA - Vite)"]
         UI_Store["Product Discovery Grid (Renders image_url)"]
-        UI_Chat["AI Sales Co-Pilot & Chat Panel (Renders Rec Cards)"]
+        UI_Chat["RazorAI & Chat Panel (Renders Rec Cards)"]
         UI_OneTap["One-Tap Quick Actions & View Product Triggers"]
         UI_Cart["Cart & Outfit Builder (Image Thumbnails)"]
         UI_Wishlist["Wishlist Drawer (Renders image_url)"]
