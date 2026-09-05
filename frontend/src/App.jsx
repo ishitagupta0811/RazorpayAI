@@ -256,8 +256,13 @@ export default function App() {
 
       targetIdForNextTrigger = addId;
       nextEventType = "upgrade_accepted";
+    } else if (id === 'reject_cross_sell' || action_type === 'STOP_PROACTIVE') {
+      // User clicked "Don't add" on Cross-Sell -> Stop Proactive Agent completely!
+      const targetId = payload?.target_id || cartItems[cartItems.length - 1]?.product_id || cartItems[cartItems.length - 1]?.id;
+      targetIdForNextTrigger = targetId;
+      nextEventType = "cross_sell_rejected";
     } else if (id === 'reject_upsell' || action_type === 'DISMISS') {
-      // Option 3: User rejected upsell -> Switch immediately to Cross-Selling / Complete the Look!
+      // User rejected upsell -> Switch immediately to Cross-Selling / Complete the Look!
       const targetId = payload?.target_id || cartItems[cartItems.length - 1]?.product_id || cartItems[cartItems.length - 1]?.id;
       targetIdForNextTrigger = targetId;
       nextEventType = "upsell_rejected";

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:merchant": "vite --port 5174 --strictPort --open merchant.html",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

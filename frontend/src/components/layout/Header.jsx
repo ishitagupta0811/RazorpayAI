@@ -32,9 +32,6 @@ export default function Header({
         </div>
 
         <div className="nav-actions">
-          <button className="merchant-dashboard-trigger-btn" title="View Merchant Analytics Dashboard" onClick={onOpenMerchantDashboard}>
-            <span>📊 Merchant Analytics</span>
-          </button>
           <button className="nav-action-btn" title="View Wishlist" onClick={onOpenWishlist}>
             <span>Wishlist</span>
             <span className="badge">{wishlistCount}</span>

@@ -37,6 +37,23 @@ app.include_router(proactive_router, prefix=settings.API_V1_STR)
 app.include_router(checkout_router, prefix=settings.API_V1_STR)
 app.include_router(analytics_router, prefix=settings.API_V1_STR)
 
+import threading
+import uvicorn
+
+def _start_merchant_port():
+    try:
+        from app.merchant_main import app as merchant_app
+        config = uvicorn.Config(merchant_app, host="0.0.0.0", port=8001, log_level="error")
+        server = uvicorn.Server(config)
+        server.run()
+    except Exception as e:
+        print("Merchant server startup note:", e)
+
+@app.on_event("startup")
+def start_merchant_service():
+    t = threading.Thread(target=_start_merchant_port, daemon=True)
+    t.start()
+
 @app.get("/")
 def root():
     return {

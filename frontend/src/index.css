@@ -1884,16 +1884,24 @@ body {
 }
 
 .ai-copilot-avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0284c7, #38bdf8);
-  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.ai-avatar-header-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .chat-header-heading {
