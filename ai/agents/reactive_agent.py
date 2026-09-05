@@ -53,7 +53,20 @@ class ReactiveAgent:
         Processes a customer reactive query against catalog products with AI Guardrails.
         Returns conversational reply, matched product DTOs, and quick action pills.
         """
-        # Guardrail Step 1: Sanitize User Query to neutralize prompt injection
+        # Guardrail Step 1: Detect prompt injection / price manipulation attempts
+        if Guardrails.is_prompt_injection(query):
+            return {
+                "reply": "I can only suggest you outfits... Which occasion are you looking for?",
+                "intent": {"category": None, "max_price": None},
+                "products": catalog_products[:6] if catalog_products else [],
+                "quick_actions": [
+                    {"id": "show_formal", "label": "Formal Workwear", "query": "formal outfits for work"},
+                    {"id": "show_casual", "label": "Casual Everyday", "query": "casual everyday clothing"},
+                    {"id": "show_party", "label": "Party Wear", "query": "party wear outfits"}
+                ]
+            }
+
+        # Guardrail Step 2: Sanitize User Query to neutralize prompt injection
         safe_query = Guardrails.sanitize_user_input(query)
 
         parsed_intent = self.intent_parser.parse_intent(safe_query)

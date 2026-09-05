@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Header from './components/layout/Header';
-import Hero from './components/layout/Hero';
 import Filters from './components/catalog/Filters';
 import ProductGrid from './components/catalog/ProductGrid';
 import ProductDetailView from './components/catalog/ProductDetailView';
@@ -263,6 +262,9 @@ function App() {
       const targetId = payload?.target_id || cartItems[cartItems.length - 1]?.product_id || cartItems[cartItems.length - 1]?.id;
       targetIdForNextTrigger = targetId;
       nextEventType = "cross_sell_rejected";
+      if (chatRef.current && chatRef.current.addAssistantMessage) {
+        chatRef.current.addAssistantMessage('Okay');
+      }
     } else if (id === 'reject_upsell' || action_type === 'DISMISS') {
       // User rejected upsell -> Switch immediately to Cross-Selling / Complete the Look!
       const targetId = payload?.target_id || cartItems[cartItems.length - 1]?.product_id || cartItems[cartItems.length - 1]?.id;
@@ -322,7 +324,6 @@ function App() {
         onOpenWishlist={() => setIsWishlistModalOpen(true)}
         onOpenMerchantDashboard={() => setIsMerchantDashboardOpen(true)}
       />
-      <Hero />
 
       {/* Permanent 3-Column Main Layout */}
       <main className={`main-3col-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>

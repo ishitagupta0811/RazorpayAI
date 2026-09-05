@@ -13,6 +13,8 @@ class Guardrails:
         r"override\s+(system\s+)?prompt",
         r"system\s*:",
         r"you\s+are\s+now\s+a",
+        r"(set|bring|change|make)\s+.*?\bprices?\b.*?\bto\s+0\b",
+        r"(set|bring|change|make)\s+all\b.*?\bto\s+0\b",
         r"set\s+all?\s+prices?\s+to\s+0",
         r"make\s+everything\s+free",
         r"drop\s+table",
@@ -25,6 +27,18 @@ class Guardrails:
         (r"\b(?:\d[ -]*?){13,16}\b", "[REDACTED_CARD]"),
         (r"(?i)\b(password|secret|token|api_key)\s*[:=]\s*\S+", r"\1: [REDACTED]")
     ]
+
+    @classmethod
+    def is_prompt_injection(cls, text: str) -> bool:
+        """
+        Detects prompt injection attacks, price manipulation, or system override attempts.
+        """
+        if not text:
+            return False
+        for pattern in cls.INJECTION_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        return False
 
     @classmethod
     def sanitize_user_input(cls, text: str) -> str:

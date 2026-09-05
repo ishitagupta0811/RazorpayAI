@@ -28,6 +28,20 @@ const ChatDrawer = forwardRef(function ChatDrawer({ onProductsRecommended, onPro
           recommendation: proactiveRes
         }
       ]);
+    },
+    addAssistantMessage: (text) => {
+      setMessages(prev => {
+        if (prev.length > 0 && prev[prev.length - 1].text === text && prev[prev.length - 1].role === 'assistant') {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            role: 'assistant',
+            text: text
+          }
+        ];
+      });
     }
   }));
 
@@ -99,6 +113,20 @@ const ChatDrawer = forwardRef(function ChatDrawer({ onProductsRecommended, onPro
         onSelectProduct(prodId);
         return;
       }
+    }
+    if (action.id === 'reject_cross_sell' || action.action_type === 'STOP_PROACTIVE') {
+      setMessages(prev => {
+        if (prev.length > 0 && prev[prev.length - 1].text === 'Okay' && prev[prev.length - 1].role === 'assistant') {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            role: 'assistant',
+            text: 'Okay'
+          }
+        ];
+      });
     }
     if (onProactiveAction) {
       onProactiveAction(action);
