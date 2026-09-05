@@ -10,10 +10,13 @@ from typing import List, Dict, Any, Optional
 from ai.agents.decision_engine import DecisionEngine
 
 class ProactiveAgent:
-    def __init__(self, confidence_threshold: float = 0.65):
+    def __init__(self, confidence_threshold: float = 0.65, max_cross_sells: int = 2):
         self.decision_engine = DecisionEngine(confidence_threshold=confidence_threshold)
         # Track sequential sales funnel lifecycle per product_id: "INIT" -> "UPSELL_DONE" -> "STOPPED"
         self.funnel_history: Dict[str, str] = {}
+        # Track total cross-sells issued per shopping session (max 2)
+        self.session_cross_sell_count: int = 0
+        self.max_cross_sells: int = max_cross_sells
 
     def evaluate_event(
         self,
@@ -26,9 +29,14 @@ class ProactiveAgent:
         """
         Sequential Sales Funnel Lifecycle:
         1. UPSELL FIRST: Recommend premium upgrade version of target product.
-        2. CROSS-SELL SECOND: Once upselling has been done for that product, recommend a cross-sell outfit item.
-        3. STOP PROACTIVE AGENT: Once cross-selling is also done, stop sending proactive popups for this funnel!
+        2. CROSS-SELL SECOND: Recommend at most 1 or 2 cross-sell outfit items across the session.
+        3. STOP PROACTIVE AGENT: After max 2 cross-sell recommendations, stop sending proactive popups completely!
         """
+        # Reset cross-sell session counter if cart is completely emptied
+        if not cart_items:
+            self.session_cross_sell_count = 0
+            self.funnel_history.clear()
+
         catalog_map = {p["id"]: p for p in catalog_products}
         target_product = catalog_map.get(target_product_id)
 
@@ -45,8 +53,9 @@ class ProactiveAgent:
         if event_type in ["upsell_rejected", "upgrade_accepted"]:
             self.funnel_history[prod_id] = "UPSELL_DONE"
             current_state = "UPSELL_DONE"
-        elif event_type in ["cross_sell_rejected", "cross_sell_accepted", "add_to_outfit"]:
+        elif event_type in ["cross_sell_rejected", "cross_sell_accepted", "add_to_outfit", "reject_cross_sell", "stop_proactive"]:
             self.funnel_history[prod_id] = "STOPPED"
+            self.session_cross_sell_count = self.max_cross_sells
             return self._silent_response()
 
         # If proactive agent has completed both stages for this product, STOP!
@@ -72,8 +81,14 @@ class ProactiveAgent:
 
         # STAGE 2: CROSS-SELL SECOND (Once UPSELL has been done)
         if current_state == "UPSELL_DONE":
+            # Cap cross-sells at max 2 per session! Stop after 2 cross-sells.
+            if self.session_cross_sell_count >= self.max_cross_sells:
+                self.funnel_history[prod_id] = "STOPPED"
+                return self._silent_response()
+
             cross_sell_cand = self._evaluate_cross_sell(target_product, cart_items, catalog_products)
             if cross_sell_cand:
+                self.session_cross_sell_count += 1
                 self.funnel_history[prod_id] = "STOPPED"
                 return self.decision_engine.evaluate_candidates(
                     upsell_candidate=None,
@@ -149,7 +164,7 @@ class ProactiveAgent:
                 "attributes": attrs
             },
             "explanation": {
-                "headline": "✨ Recommended Premium Upgrade",
+                "headline": "Recommended Premium Upgrade",
                 "rationale": f"For +₹{int(delta_price):,} more, upgrade to {upgrade_p['title']} featuring superior {fabric} and an upgraded {fit}.",
                 "delta_price_label": f"+₹{int(delta_price):,}"
             },
@@ -158,12 +173,6 @@ class ProactiveAgent:
                     "id": "accept_upsell_replace",
                     "label": "Yes, upgrade & replace",
                     "action_type": "SWAP_CART_ITEM",
-                    "payload": { "remove_id": target_id, "add_id": upgrade_p["id"] }
-                },
-                {
-                    "id": "accept_upsell_wishlist_prev",
-                    "label": "Upgrade & Wishlist previous",
-                    "action_type": "UPGRADE_AND_WISHLIST_PREV",
                     "payload": { "remove_id": target_id, "add_id": upgrade_p["id"] }
                 },
                 {
@@ -242,6 +251,12 @@ class ProactiveAgent:
                     "label": "Add to outfit",
                     "action_type": "ADD_TO_CART",
                     "payload": { "product_id": comp_p["id"] }
+                },
+                {
+                    "id": "reject_cross_sell",
+                    "label": "Don't add",
+                    "action_type": "STOP_PROACTIVE",
+                    "payload": { "target_id": comp_p["id"] }
                 }
             ]
         }
