@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.rate_limiter import RateLimiterMiddleware
 from app.api.routes_catalog import router as catalog_router
 from app.api.routes_agent import router as agent_router
 from app.api.routes_proactive import router as proactive_router
@@ -21,6 +22,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Add Rate Limiting Middleware
+app.add_middleware(RateLimiterMiddleware, requests_limit=60, window_seconds=60)
 
 # Set CORS middleware allowing Vite dev server (http://localhost:5173) & all origins
 app.add_middleware(
@@ -59,7 +63,7 @@ def root():
     return {
         "name": settings.PROJECT_NAME,
         "status": "healthy",
-        "phase": "Phase 5 - Merchant Dashboard & AOV Metrics Attribution (Updated)",
+        "phase": "Phase 6 - System Hardening & Guardrails",
         "docs": "/docs"
     }
 

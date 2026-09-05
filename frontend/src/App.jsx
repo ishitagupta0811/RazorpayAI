@@ -10,10 +10,12 @@ import CartOutfitDrawer from './components/cart/CartOutfitDrawer';
 import WishlistModal from './components/wishlist/WishlistModal';
 import OrderSuccessModal from './components/checkout/OrderSuccessModal';
 import MerchantDashboardModal from './components/merchant/MerchantDashboardModal';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Toast from './components/common/Toast';
 import { getProducts, sendProactiveTrigger } from './services/api';
 import { useCart } from './context/CartContext';
 
-export default function App() {
+function App() {
   const { markAiRecommendation } = useCart();
   // Filter States
   const [category, setCategory] = useState('all');
@@ -413,6 +415,16 @@ export default function App() {
         orderDetails={orderSuccessDetails}
         onClose={() => setOrderSuccessDetails(null)}
       />
+
+      <Toast message={null} />
     </div>
+  );
+}
+
+export default function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   );
 }

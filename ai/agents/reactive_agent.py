@@ -8,6 +8,7 @@ import os
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from ai.agents.intent_parser import IntentParser
+from ai.agents.guardrails import Guardrails
 
 load_dotenv()
 
@@ -49,10 +50,13 @@ class ReactiveAgent:
         chat_history: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, Any]:
         """
-        Processes a customer reactive query against catalog products.
+        Processes a customer reactive query against catalog products with AI Guardrails.
         Returns conversational reply, matched product DTOs, and quick action pills.
         """
-        parsed_intent = self.intent_parser.parse_intent(query)
+        # Guardrail Step 1: Sanitize User Query to neutralize prompt injection
+        safe_query = Guardrails.sanitize_user_input(query)
+
+        parsed_intent = self.intent_parser.parse_intent(safe_query)
         max_price = parsed_intent.get("max_price")
         req_category = parsed_intent.get("category")
         req_subcat = parsed_intent.get("subcategory")
@@ -114,11 +118,14 @@ class ReactiveAgent:
             else:
                 matched_products = catalog_products[:6]
 
-        # Limit top matched products for visual chat presentation
-        top_matches = matched_products[:6]
+        # Guardrail Step 2: Enforce Strict Financial Budget Ceiling
+        top_matches = Guardrails.enforce_budget_ceiling(matched_products[:6], max_price)
 
         # 2. Synthesize Explainable AI Response
-        conversational_reply = self._generate_explanation(query, parsed_intent, top_matches)
+        conversational_reply = self._generate_explanation(safe_query, parsed_intent, top_matches)
+        
+        # Guardrail Step 3: Redact PII from outgoing response text
+        conversational_reply = Guardrails.redact_pii(conversational_reply)
 
         # 3. Generate One-Tap Quick Actions
         quick_actions = self._generate_quick_actions(parsed_intent, top_matches)

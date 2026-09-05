@@ -29,8 +29,14 @@ export default function OrderSuccessModal({ orderDetails, onClose }) {
             <span className="meta-val">Ishita Gupta (ishitagupta0811@gmail.com)</span>
           </div>
           {orderDetails.ai_attributed && (
-            <div className="ai-attributed-badge">
-              🤖 AI Agent Assisted Order (+15% AOV Attribution)
+            <div className="ai-attributed-badge" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <img
+                src="/chatbot-avatar-hd.png"
+                alt="AI Agent"
+                style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }}
+                onError={(e) => { e.target.onerror = null; e.target.src = '/chatbot-avatar.png'; }}
+              />
+              <span>AI Agent Assisted Order (+15% AOV Attribution)</span>
             </div>
           )}
         </div>

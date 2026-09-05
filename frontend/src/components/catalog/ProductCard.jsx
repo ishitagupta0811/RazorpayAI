@@ -6,7 +6,7 @@ export default function ProductCard({ product, onAddToCart, onAddToWishlist, isW
   const attrs = product.attributes || {};
   const fabricTag = attrs.fabric || attrs.material_fabric || 'Quality Fabric';
   const fitTag = attrs.fit || attrs.fit_or_build || 'Tailored Fit';
-  const defaultFallbackImage = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80";
+  const defaultFallbackImage = "/fallback-product.svg";
 
   const handleCardClick = () => {
     if (onSelectProduct) {

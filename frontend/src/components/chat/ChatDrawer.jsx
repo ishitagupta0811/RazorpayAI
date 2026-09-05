@@ -115,7 +115,14 @@ const ChatDrawer = forwardRef(function ChatDrawer({ onProductsRecommended, onPro
       {/* Panel Header */}
       <div className="chat-drawer-header">
         <div className="chat-header-title-group">
-          <div className="ai-copilot-avatar">🤖</div>
+          <div className="ai-copilot-avatar">
+            <img 
+              src="/chatbot-avatar-hd.png" 
+              alt="RazorAI Avatar" 
+              className="ai-avatar-header-img"
+              onError={(e) => { e.target.onerror = null; e.target.src = '/chatbot-avatar.png'; }}
+            />
+          </div>
           <div>
             <h3 className="chat-header-heading">RazorAI</h3>
             <span className="chat-online-status">
@@ -130,6 +137,17 @@ const ChatDrawer = forwardRef(function ChatDrawer({ onProductsRecommended, onPro
         {messages.map((msg, index) => (
           <div key={index} className="message-wrapper">
             <div className={`chat-bubble-box ${msg.role === 'user' ? 'user-chat-bubble' : 'ai-chat-bubble'}`}>
+              {msg.role === 'assistant' && (
+                <div className="ai-chat-sender-header" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                  <img
+                    src="/chatbot-avatar-hd.png"
+                    alt="RazorAI"
+                    style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover' }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/chatbot-avatar.png'; }}
+                  />
+                  <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#0284c7', letterSpacing: '0.02em' }}>RazorAI</span>
+                </div>
+              )}
               <p>{msg.text}</p>
 
               {/* Render Proactive Recommendation Card inside AI Chat */}
