@@ -1,29 +1,43 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { sendChat } from '../../services/api';
+import RecommendationCard from '../recommendations/RecommendationCard';
 
-export default function ChatDrawer({ onProductsRecommended }) {
-  const [isOpen, setIsOpen] = useState(false);
+const ChatDrawer = forwardRef(function ChatDrawer({ onProductsRecommended, onProactiveAction, onSelectProduct }, ref) {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: '👋 Hello! I am your AI Sales Co-Pilot. Looking for style advice, specific fabrics, or recommendations under budget?',
-      quickActions: [
-        { id: 'formal_600', label: 'Formal shirt under ₹600', query: 'Formal shirt under ₹600' },
-        { id: 'build_outfit', label: 'Build outfit under ₹2500', query: 'Build me a complete formal outfit under ₹2500' },
-        { id: 'party_wear', label: 'Show Party Wear', query: 'Show evening party wear' }
-      ]
+      text: 'Hello! I am your RazorAI. Looking for style advice?'
     }
   ]);
 
-  const messagesEndRef = useRef(null);
+  const chatStreamRef = useRef(null);
   const defaultFallbackImage = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&auto=format&fit=crop&q=80";
 
-  // Auto-scroll chat to bottom
+  // Allow parent component (App.jsx) to append proactive recommendations
+  useImperativeHandle(ref, () => ({
+    addProactiveRecommendation: (proactiveRes) => {
+      if (!proactiveRes || proactiveRes.type === "SILENT") return;
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: proactiveRes.explanation?.headline || 'Proactive Recommendation',
+          recommendation: proactiveRes
+        }
+      ]);
+    }
+  }));
+
+  // Auto-scroll AI Co-Pilot panel internally to show new recommendations
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatStreamRef.current) {
+      chatStreamRef.current.scrollTo({
+        top: chatStreamRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, [messages, loading]);
 
@@ -39,7 +53,7 @@ export default function ChatDrawer({ onProductsRecommended }) {
     setLoading(true);
 
     try {
-      // Build history for API (excluding products DTOs)
+      // Build history for API
       const historyPayload = updatedMessages.map(m => ({
         role: m.role,
         content: m.text
@@ -60,7 +74,6 @@ export default function ChatDrawer({ onProductsRecommended }) {
           }
         ]);
 
-        // Optional callback to highlight recommended products in main grid
         if (onProductsRecommended && response.products && response.products.length > 0) {
           onProductsRecommended(response.products, queryText);
         }
@@ -79,57 +92,67 @@ export default function ChatDrawer({ onProductsRecommended }) {
     }
   };
 
+  const handleProactiveActionClick = (action) => {
+    if (action.action_type === 'HIGHLIGHT_PRODUCT_IN_GRID' || action.id === 'view_product') {
+      const prodId = action.payload?.product_id;
+      if (prodId && onSelectProduct) {
+        onSelectProduct(prodId);
+        return;
+      }
+    }
+    if (onProactiveAction) {
+      onProactiveAction(action);
+    }
+  };
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
     handleSendMessage(inputText);
   };
 
   return (
-    <>
-      {/* Floating Gradient Button in Bottom-Right Corner */}
-      <button
-        className="ai-fab-btn"
-        title="Open AI Sales Co-Pilot"
-        onClick={() => setIsOpen(true)}
-      >
-        <span className="fab-sparkle-icon">✨</span>
-        <span className="fab-label-text">Ask AI Co-Pilot</span>
-      </button>
-
-      {/* Backdrop Overlay */}
-      <div
-        className={`drawer-backdrop-overlay ${isOpen ? 'active' : ''}`}
-        onClick={() => setIsOpen(false)}
-      />
-
-      {/* Slide-In Drawer from Right (~400px wide, full height) */}
-      <aside className={`chat-slide-drawer ${isOpen ? 'active' : ''}`}>
-        {/* Drawer Header */}
-        <div className="chat-drawer-header">
-          <div className="chat-header-title-group">
-            <div className="ai-copilot-avatar">✨</div>
-            <div>
-              <h3 className="chat-header-heading">AI Sales Co-Pilot</h3>
-              <span className="chat-online-status">
-                <span className="online-green-dot" /> Active & Ready
-              </span>
-            </div>
+    <aside className="ai-side-panel">
+      {/* Panel Header */}
+      <div className="chat-drawer-header">
+        <div className="chat-header-title-group">
+          <div className="ai-copilot-avatar">🤖</div>
+          <div>
+            <h3 className="chat-header-heading">RazorAI</h3>
+            <span className="chat-online-status">
+              <span className="online-green-dot" /> Active & Ready
+            </span>
           </div>
-          <button className="chat-close-btn" onClick={() => setIsOpen(false)}>&times;</button>
         </div>
+      </div>
 
-        {/* Scrollable Message History Area */}
-        <div className="chat-message-stream">
-          {messages.map((msg, index) => (
-            <div key={index} className="message-wrapper">
-              <div className={`chat-bubble-box ${msg.role === 'user' ? 'user-chat-bubble' : 'ai-chat-bubble'}`}>
-                <p>{msg.text}</p>
+      {/* Scrollable Message Stream */}
+      <div className="chat-message-stream" ref={chatStreamRef}>
+        {messages.map((msg, index) => (
+          <div key={index} className="message-wrapper">
+            <div className={`chat-bubble-box ${msg.role === 'user' ? 'user-chat-bubble' : 'ai-chat-bubble'}`}>
+              <p>{msg.text}</p>
 
-                {/* Inline Small Horizontal Product Cards for AI Messages */}
-                {msg.products && msg.products.length > 0 && (
-                  <div className="inline-mini-products-list">
-                    {msg.products.slice(0, 4).map((prod) => (
-                      <div key={prod.id || prod.product_id} className="mini-card-horizontal">
+              {/* Render Proactive Recommendation Card inside AI Chat */}
+              {msg.recommendation && (
+                <RecommendationCard
+                  recommendation={msg.recommendation}
+                  onActionClick={handleProactiveActionClick}
+                  onSelectProduct={onSelectProduct}
+                />
+              )}
+
+              {/* Inline Small Horizontal Product Cards for AI Messages (Clicking opens big detailed view in middle!) */}
+              {msg.products && msg.products.length > 0 && (
+                <div className="inline-mini-products-list">
+                  {msg.products.slice(0, 4).map((prod) => {
+                    const targetId = prod.id || prod.product_id;
+                    return (
+                      <div
+                        key={targetId}
+                        className="mini-card-horizontal"
+                        title="Click to view full detailed product view"
+                        onClick={() => onSelectProduct && onSelectProduct(targetId)}
+                      >
                         <img
                           src={prod.image_url || defaultFallbackImage}
                           alt={prod.title}
@@ -145,54 +168,54 @@ export default function ChatDrawer({ onProductsRecommended }) {
                             ₹{typeof prod.price === 'number' ? prod.price.toLocaleString('en-IN') : prod.price}
                           </div>
                         </div>
+                        <span className="mini-card-arrow">➔</span>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Action Pill Buttons below AI Message */}
-              {msg.quickActions && msg.quickActions.length > 0 && (
-                <div className="quick-actions-pill-container">
-                  {msg.quickActions.map((action, actIdx) => (
-                    <button
-                      key={actIdx}
-                      className="quick-action-pill-btn"
-                      onClick={() => handleSendMessage(action.query || action.label)}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
-          ))}
 
-          {loading && (
-            <div className="chat-bubble-box ai-chat-bubble">
-              <span className="thinking-typing-indicator">AI Co-Pilot is thinking... ✨</span>
-            </div>
-          )}
+            {/* Quick Action Pill Buttons below AI Message */}
+            {msg.quickActions && msg.quickActions.length > 0 && (
+              <div className="quick-actions-pill-container">
+                {msg.quickActions.map((action, actIdx) => (
+                  <button
+                    key={actIdx}
+                    className="quick-action-pill-btn"
+                    onClick={() => handleSendMessage(action.query || action.label)}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
 
-          <div ref={messagesEndRef} />
-        </div>
+        {loading && (
+          <div className="chat-bubble-box ai-chat-bubble">
+            <span className="thinking-typing-indicator">RazorAI is thinking...</span>
+          </div>
+        )}
+      </div>
 
-        {/* Bottom Text Input & Send Button */}
-        <form className="chat-bottom-input-form" onSubmit={handleFormSubmit}>
-          <input
-            type="text"
-            className="chat-text-input"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask AI (e.g. 'Formal shirt under ₹600')..."
-            autoComplete="off"
-          />
-          <button type="submit" className="chat-send-submit-btn" disabled={loading}>
-            <span>Send</span>
-            <span className="send-arrow-icon">➔</span>
-          </button>
-        </form>
-      </aside>
-    </>
+      {/* Bottom Text Input & Send Button */}
+      <form className="chat-bottom-input-form" onSubmit={handleFormSubmit}>
+        <input
+          type="text"
+          className="chat-text-input"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          placeholder="Ask RazorAI for style advice..."
+          autoComplete="off"
+        />
+        <button type="submit" className="chat-send-submit-btn" disabled={loading}>
+          <span>Send</span>
+        </button>
+      </form>
+    </aside>
   );
-}
+});
+
+export default ChatDrawer;
