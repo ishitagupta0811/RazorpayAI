@@ -83,18 +83,30 @@ def import_csv_catalog(csv_file_path: str = None):
                 products_list.append(db_prod)
 
                 # Parse Upsell Relation
-                upsell_id = row.get("upsell_to_product_id", "").strip()
-                if upsell_id:
-                    delta_p = float(row.get("upsell_delta_price", 0)) if row.get("upsell_delta_price") else 0.0
-                    pitch = row.get("upsell_pitch", "").strip()
-                    relations_list.append(ProductRelation(
-                        source_id=prod_id,
-                        target_id=upsell_id,
-                        relation_type="UPGRADE",
-                        delta_price=delta_p,
-                        slot=row.get("subcategory", "").strip(),
-                        pitch=pitch
-                    ))
+                upsell_raw = row.get("upsell_to_product_id", "").strip()
+                if upsell_raw:
+                    upsell_ids = [u.strip() for u in upsell_raw.split("|") if u.strip()]
+                    delta_raw = row.get("upsell_delta_price", "").strip()
+                    deltas = [d.strip() for d in delta_raw.split("|") if d.strip()]
+                    pitch_raw = row.get("upsell_pitch", "").strip()
+                    pitches = [p.strip() for p in pitch_raw.split("|") if p.strip()]
+
+                    for idx, target_u_id in enumerate(upsell_ids):
+                        delta_p = 0.0
+                        if idx < len(deltas):
+                            try:
+                                delta_p = float(deltas[idx])
+                            except ValueError:
+                                delta_p = 0.0
+                        p_text = pitches[idx] if idx < len(pitches) else pitch_raw
+                        relations_list.append(ProductRelation(
+                            source_id=prod_id,
+                            target_id=target_u_id,
+                            relation_type="UPGRADE",
+                            delta_price=delta_p,
+                            slot=row.get("subcategory", "").strip(),
+                            pitch=p_text
+                        ))
 
                 # Parse Cross-sell Relations
                 cross_ids_raw = row.get("cross_sell_product_ids", "").strip()
